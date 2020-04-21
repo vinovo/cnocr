@@ -21,14 +21,17 @@ import argparse
 import logging
 import os
 import sys
+import mxnet as mx
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from cnocr.__version__ import __version__
+from cnocr.consts import EMB_MODEL_TYPES, SEQ_MODEL_TYPES
 from cnocr.utils import data_dir
-from cnocr.hyperparams.cn_hyperparams import CnHyperparams as Hyperparams
-from cnocr.hyperparams.hyperparams2 import Hyperparams as Hyperparams2
-from cnocr.data_utils.data_iter import ImageIterLstm, MPOcrImages, OCRIter
-from cnocr.symbols.crnn import crnn_no_lstm, crnn_lstm
+from cnocr.hyperparams.cn_hyperparams import CnHyperparams
+from cnocr.data_utils.data_iter import GrayImageIter
+from cnocr.data_utils.aug import FgBgFlipAug
+from cnocr.symbols.crnn import gen_network
 from cnocr.fit.ctc_metrics import CtcMetrics
 from cnocr.fit.fit import fit
 
@@ -36,144 +39,162 @@ from cnocr.fit.fit import fit
 def parse_args():
     # Parse command line arguments
     parser = argparse.ArgumentParser()
-    default_model_prefix = os.path.join(data_dir(), 'models', 'model-v{}'.format(__version__))
 
-    parser.add_argument("--dataset",
-                        help="use which kind of dataset, captcha or cn_ocr",
-                        choices=['captcha', 'cn_ocr'],
-                        type=str, default='captcha')
-    parser.add_argument("--data_root", help="Path to image files", type=str,
-                        default='/Users/king/Documents/WhatIHaveDone/Test/text_renderer/output/wechat_simulator')
-    parser.add_argument("--train_file", help="Path to train txt file", type=str,
-                        default='/Users/king/Documents/WhatIHaveDone/Test/text_renderer/output/wechat_simulator/train.txt')
-    parser.add_argument("--test_file", help="Path to test txt file", type=str,
-                        default='/Users/king/Documents/WhatIHaveDone/Test/text_renderer/output/wechat_simulator/test.txt')
-    parser.add_argument("--cpu",
-                        help="Number of CPUs for training [Default 8]. Ignored if --gpu is specified.",
-                        type=int, default=2)
-    parser.add_argument("--gpu", help="Number of GPUs for training [Default 0]", type=int)
-    parser.add_argument('--load_epoch', type=int,
-                        help='load the model on an epoch using the model-load-prefix [Default: no trained model will be loaded]')
-    parser.add_argument("--prefix", help="Checkpoint prefix [Default '{}']".format(default_model_prefix),
-                        default=default_model_prefix)
-    parser.add_argument("--loss", help="'ctc' or 'warpctc' loss [Default 'ctc']", default='ctc')
-    parser.add_argument("--num_proc", help="Number CAPTCHA generating processes [Default 4]", type=int, default=4)
-    parser.add_argument("--font_path", help="Path to ttf font file or directory containing ttf files")
+    parser.add_argument(
+        "--emb_model_type",
+        help="which embedding model to use",
+        choices=EMB_MODEL_TYPES,
+        type=str,
+        default='conv-lite',
+    )
+    parser.add_argument(
+        "--seq_model_type",
+        help='which sequence model to use',
+        default='fc',
+        type=str,
+        choices=SEQ_MODEL_TYPES,
+    )
+    parser.add_argument(
+        "--train_file",
+        help="Path to train txt file",
+        type=str,
+        default='data/sample-data-lst/train.txt',
+    )
+    parser.add_argument(
+        "--test_file",
+        help="Path to test txt file",
+        type=str,
+        default='data/sample-data-lst/test.txt',
+    )
+    parser.add_argument(
+        "--use_train_image_aug",
+        action='store_true',
+        help="Whether to use image augmentation for training",
+    )
+    parser.add_argument(
+        "--gpu",
+        help="Number of GPUs for training [Default 0, means using cpu]",
+        type=int,
+        default=0,
+    )
+    parser.add_argument(
+        "--optimizer",
+        help="optimizer for training [Default: Adam]",
+        type=str,
+        default='Adam',
+    )
+    parser.add_argument(
+        '--epoch', type=int, default=20, help='train epochs [Default: 20]'
+    )
+    parser.add_argument(
+        '--load_epoch',
+        type=int,
+        help='load the model on an epoch using the model-load-prefix [Default: no trained model will be loaded]',
+    )
+    parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
+    parser.add_argument(
+        '--wd', type=float, default=0.0, help='weight decay factor [Default: 0.0]'
+    )
+    parser.add_argument(
+        '--clip_gradient',
+        type=float,
+        default=None,
+        help='value for clip gradient [Default: None, means no gradient will be clip]',
+    )
+    parser.add_argument(
+        "--out_model_dir",
+        help='output model directory',
+        default=os.path.join(data_dir(), __version__),
+    )
     return parser.parse_args()
 
 
-def get_fonts(path):
-    fonts = list()
-    if os.path.isdir(path):
-        for filename in os.listdir(path):
-            if filename.endswith('.ttf') or filename.endswith('.ttc'):
-                fonts.append(os.path.join(path, filename))
-    else:
-        fonts.append(path)
-    return fonts
-
-
-def run_captcha(args):
-    from cnocr.data_utils.captcha_generator import MPDigitCaptcha
-
-    hp = Hyperparams2()
-
-    network = crnn_lstm(hp)
-    # arg_shape, out_shape, aux_shape = network.infer_shape(data=(128, 1, 32, 100), label=(128, 10),
-    #                                                       l0_init_h=(128, 100), l1_init_h=(128, 100), l2_init_h=(128, 100), l3_init_h=(128, 100))
-    # print(dict(zip(network.list_arguments(), arg_shape)))
-    # import pdb; pdb.set_trace()
-
-    # Start a multiprocessor captcha image generator
-    mp_captcha = MPDigitCaptcha(
-        font_paths=get_fonts(args.font_path), h=hp.img_width, w=hp.img_height,
-        num_digit_min=3, num_digit_max=4, num_processes=args.num_proc, max_queue_size=hp.batch_size * 2)
-    mp_captcha.start()
-    # img, num = mp_captcha.get()
-    # print(img.shape, num)
-    # import numpy as np
-    # import cv2
-    # img = np.transpose(img, (1, 0))
-    # cv2.imwrite('captcha1.png', img * 255)
-    # import sys
-    # sys.exit(0)
-    # import pdb; pdb.set_trace()
-
-    # init_c = [('l%d_init_c' % l, (hp.batch_size, hp.num_hidden)) for l in range(hp.num_lstm_layer * 2)]
-    # init_h = [('l%d_init_h' % l, (hp.batch_size, hp.num_hidden)) for l in range(hp.num_lstm_layer * 2)]
-    # init_states = init_c + init_h
-    # data_names = ['data'] + [x[0] for x in init_states]
-    data_names = ['data']
-
-    data_train = OCRIter(
-        hp.train_epoch_size // hp.batch_size, hp.batch_size, captcha=mp_captcha, num_label=hp.num_label,
-        name='train')
-    data_val = OCRIter(
-        hp.eval_epoch_size // hp.batch_size, hp.batch_size, captcha=mp_captcha, num_label=hp.num_label,
-        name='val')
-
+def train_cnocr(args):
     head = '%(asctime)-15s %(message)s'
     logging.basicConfig(level=logging.DEBUG, format=head)
+    args.model_name = args.emb_model_type + '-' + args.seq_model_type
+    out_dir = os.path.join(args.out_model_dir, args.model_name)
+    print('save models to dir: %s' % out_dir, flush=True)
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    args.prefix = os.path.join(
+        out_dir, 'cnocr-v{}-{}'.format(__version__, args.model_name)
+    )
 
+    hp = CnHyperparams()
+    hp = _update_hp(hp, args)
+
+    network, hp = gen_network(args.model_name, hp)
     metrics = CtcMetrics(hp.seq_length)
 
-    fit(network=network, data_train=data_train, data_val=data_val, metrics=metrics, args=args, hp=hp, data_names=data_names)
-
-    mp_captcha.reset()
-
-
-def run_cn_ocr(args):
-    hp = Hyperparams()
-
-    network = crnn_lstm(hp)
-
-    mp_data_train = MPOcrImages(args.data_root, args.train_file, (hp.img_width, hp.img_height), hp.num_label,
-                                num_processes=args.num_proc, max_queue_size=hp.batch_size * 100)
-    # img, num = mp_data_train.get()
-    # print(img.shape)
-    # print(mp_data_train.shape)
-    # import pdb; pdb.set_trace()
-    # import numpy as np
-    # import cv2
-    # img = np.transpose(img, (1, 0))
-    # cv2.imwrite('captcha1.png', img * 255)
-    # import pdb; pdb.set_trace()
-    mp_data_test = MPOcrImages(args.data_root, args.test_file, (hp.img_width, hp.img_height), hp.num_label,
-                               num_processes=max(args.num_proc // 2, 1), max_queue_size=hp.batch_size * 10)
-    mp_data_train.start()
-    mp_data_test.start()
-
-    # init_c = [('l%d_init_c' % l, (hp.batch_size, hp.num_hidden)) for l in range(hp.num_lstm_layer * 2)]
-    # init_h = [('l%d_init_h' % l, (hp.batch_size, hp.num_hidden)) for l in range(hp.num_lstm_layer * 2)]
-    # init_states = init_c + init_h
-    # data_names = ['data'] + [x[0] for x in init_states]
+    data_train, data_val = _gen_iters(
+        hp, args.train_file, args.test_file, args.use_train_image_aug
+    )
     data_names = ['data']
+    fit(
+        network=network,
+        data_train=data_train,
+        data_val=data_val,
+        metrics=metrics,
+        args=args,
+        hp=hp,
+        data_names=data_names,
+    )
 
-    data_train = OCRIter(
-        hp.train_epoch_size // hp.batch_size, hp.batch_size, captcha=mp_data_train, num_label=hp.num_label,
-        name='train')
-    data_val = OCRIter(
-        hp.eval_epoch_size // hp.batch_size, hp.batch_size, captcha=mp_data_test, num_label=hp.num_label,
-        name='val')
-    # data_train = ImageIterLstm(
-    #     args.data_root, args.train_file, hp.batch_size, (hp.img_width, hp.img_height), hp.num_label, init_states, name="train")
-    # data_val = ImageIterLstm(
-    #     args.data_root, args.test_file,  hp.batch_size, (hp.img_width, hp.img_height), hp.num_label, init_states, name="val")
 
-    head = '%(asctime)-15s %(message)s'
-    logging.basicConfig(level=logging.DEBUG, format=head)
+def _update_hp(hp, args):
+    hp.seq_model_type = args.seq_model_type
+    hp._num_epoch = args.epoch
+    hp.optimizer = args.optimizer
+    hp._learning_rate = args.lr
+    hp.wd = args.wd
+    hp.clip_gradient = args.clip_gradient
+    return hp
 
-    metrics = CtcMetrics(hp.seq_length)
 
-    fit(network=network, data_train=data_train, data_val=data_val, metrics=metrics, args=args, hp=hp, data_names=data_names)
+def _gen_iters(hp, train_fp_prefix, val_fp_prefix, use_train_image_aug):
+    height, width = hp.img_height, hp.img_width
+    augs = None
+    if use_train_image_aug:
+        augs = mx.image.CreateAugmenter(
+            data_shape=(3, height, width),
+            resize=0,
+            rand_crop=False,
+            rand_resize=False,
+            rand_mirror=False,
+            mean=None,
+            std=None,
+            brightness=0.001,
+            contrast=0.001,
+            saturation=0.001,
+            hue=0.05,
+            pca_noise=0.1,
+            inter_method=2,
+        )
+        augs.append(FgBgFlipAug(p=0.2))
+    train_iter = GrayImageIter(
+        batch_size=hp.batch_size,
+        data_shape=(3, height, width),
+        label_width=hp.num_label,
+        dtype='int32',
+        shuffle=True,
+        path_imgrec=str(train_fp_prefix) + ".rec",
+        path_imgidx=str(train_fp_prefix) + ".idx",
+        aug_list=augs,
+    )
 
-    mp_data_train.reset()
-    mp_data_test.reset()
+    val_iter = GrayImageIter(
+        batch_size=hp.batch_size,
+        data_shape=(3, height, width),
+        label_width=hp.num_label,
+        dtype='int32',
+        path_imgrec=str(val_fp_prefix) + ".rec",
+        path_imgidx=str(val_fp_prefix) + ".idx",
+    )
+
+    return train_iter, val_iter
 
 
 if __name__ == '__main__':
     args = parse_args()
-    if args.dataset == 'captcha':
-        run_captcha(args)
-    else:
-        run_cn_ocr(args)
+    train_cnocr(args)

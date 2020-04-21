@@ -18,16 +18,19 @@ exec(
 )
 
 required = [
-    'numpy>=1.14.0,<1.15.0',
+    'numpy>=1.14.0,<1.20.0',
     'pillow>=5.3.0',
-    'mxnet>=1.4.1,<1.5.0',
-    'gluoncv>=0.3.0,<0.4.0',
+    'mxnet>=1.5.0,<1.7.0',
+    'gluoncv>=0.3.0,<0.7.0',
 ]
+extras_require = {
+    "dev": ["pip-tools", "pytest", "python-Levenshtein"],
+}
 
 setup(
     name=PACKAGE_NAME,
     version=about['__version__'],
-    description="Package for Chinese OCR, which can be used after installed without training yourself OCR model",
+    description="Simple package for Chinese OCR, with small pretrained models",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author='breezedeus',
@@ -36,10 +39,9 @@ setup(
     url='https://github.com/breezedeus/cnocr',
     platforms=["Mac", "Linux", "Windows"],
     packages=find_packages(),
-    # entry_points={'cnocr_predict': ['chitchatbot=chitchatbot.cli:main'],
-    #               'cnocr_train': ['chitchatbot=chitchatbot:Spec']},
     include_package_data=True,
     install_requires=required,
+    extras_require=extras_require,
     zip_safe=False,
     classifiers=[
         'Development Status :: 4 - Beta',

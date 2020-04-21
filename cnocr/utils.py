@@ -18,10 +18,9 @@
 import os
 import platform
 import zipfile
-import numpy as np
 from mxnet.gluon.utils import download
 
-from .consts import MODEL_BASE_URL, ZIP_FILE_NAME
+from .consts import AVAILABLE_MODELS, EMB_MODEL_TYPES, SEQ_MODEL_TYPES
 
 
 def data_dir_default():
@@ -44,7 +43,13 @@ def data_dir():
     return os.getenv('CNOCR_HOME', data_dir_default())
 
 
-def get_model_file(root=data_dir()):
+def check_model_name(model_name):
+    emb_model_type, seq_model_type = model_name.rsplit('-', maxsplit=1)
+    assert emb_model_type in EMB_MODEL_TYPES
+    assert seq_model_type in SEQ_MODEL_TYPES
+
+
+def get_model_file(model_dir):
     r"""Return location for the downloaded models on local file system.
 
     This function will download from online model zoo when model cannot be found or has mismatch.
@@ -52,7 +57,7 @@ def get_model_file(root=data_dir()):
 
     Parameters
     ----------
-    root : str, default $CNOCR_HOME
+    model_dir : str, default $CNOCR_HOME
         Location for keeping the model parameters.
 
     Returns
@@ -60,18 +65,22 @@ def get_model_file(root=data_dir()):
     file_path
         Path to the requested pretrained model file.
     """
-    root = os.path.expanduser(root)
+    model_dir = os.path.expanduser(model_dir)
+    par_dir = os.path.dirname(model_dir)
+    os.makedirs(par_dir, exist_ok=True)
 
-    os.makedirs(root, exist_ok=True)
-
-    zip_file_path = os.path.join(root, ZIP_FILE_NAME)
+    zip_file_path = model_dir + '.zip'
     if not os.path.exists(zip_file_path):
-        download(MODEL_BASE_URL, path=zip_file_path, overwrite=True)
+        model_name = os.path.basename(model_dir)
+        if model_name not in AVAILABLE_MODELS:
+            raise NotImplementedError('%s is not an available downloaded model' % model_name)
+        url = AVAILABLE_MODELS[model_name][1]
+        download(url, path=zip_file_path, overwrite=True)
     with zipfile.ZipFile(zip_file_path) as zf:
-        zf.extractall(root)
+        zf.extractall(par_dir)
     os.remove(zip_file_path)
 
-    return os.path.join(root, 'models')
+    return model_dir
 
 
 def read_charset(charset_fp):
@@ -81,12 +90,18 @@ def read_charset(charset_fp):
         for line in fp:
             alphabet.append(line.rstrip('\n'))
     # print('Alphabet size: %d' % len(alphabet))
+    try:
+        space_idx = alphabet.index('<space>')
+        alphabet[space_idx] = ' '
+    except ValueError:
+        pass
     inv_alph_dict = {_char: idx for idx, _char in enumerate(alphabet)}
-    # inv_alph_dict[' '] = inv_alph_dict['<space>']  # 对应空格
     return alphabet, inv_alph_dict
 
 
-def normalize_img_array(img):
+def normalize_img_array(img, dtype='float32'):
     """ rescale to [-1.0, 1.0] """
-    # return (img / 255.0 - 0.5) * 2
-    return (img - np.mean(img)) / (np.std(img) + 1e-6)
+    img = img.astype(dtype)
+    # return (img - np.mean(img, dtype=dtype)) / 255.0
+    return img / 255.0
+    # return (img - np.median(img)) / (np.std(img, dtype=dtype) + 1e-6)  # 转完以后有些情况会变得不可识别
