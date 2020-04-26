@@ -11,7 +11,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 
 from cnocr.consts import EMB_MODEL_TYPES, SEQ_MODEL_TYPES
-from cnocr.utils import set_logger
 from cnocr.hyperparams.cn_hyperparams import CnHyperparams
 from cnocr.symbols.densenet import _make_dense_layer, DenseNet, cal_num_params
 from cnocr.symbols.crnn import (
@@ -23,7 +22,9 @@ from cnocr.symbols.crnn import (
     crnn_lstm_lite,
 )
 
-logger = set_logger('info')
+head = '%(asctime)-15s %(message)s'
+logging.basicConfig(level=logging.DEBUG, format=head)
+logger = logging.getLogger(__name__)
 
 HP = CnHyperparams()
 
@@ -51,7 +52,7 @@ def test_densenet():
 
 def test_crnn():
     _hp = deepcopy(HP)
-    _hp.set_seq_length(_hp.img_width // 4)
+    _hp.set_seq_length(_hp.img_width // 4 - 1)
     x = nd.random.randn(128, 64, 32, 280)
     layer_channels_list = [(64, 128, 256, 512), (32, 64, 128, 256)]
     for layer_channels in layer_channels_list:
