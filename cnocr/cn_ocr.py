@@ -16,6 +16,7 @@
 # specific language governing permissions and limitations
 # under the License.
 import os
+import re
 import logging
 import mxnet as mx
 import numpy as np
@@ -25,7 +26,6 @@ from cnocr.consts import MODEL_VERSION, AVAILABLE_MODELS
 from cnocr.hyperparams.cn_hyperparams import CnHyperparams as Hyperparams
 from cnocr.fit.lstm import init_states
 from cnocr.fit.ctc_metrics import CtcMetrics
-from cnocr.data_utils.data_iter import SimpleBatch
 from cnocr.symbols.crnn import gen_network
 from cnocr.utils import (
     data_dir,
@@ -83,7 +83,16 @@ def lstm_init_states(batch_size, hp):
     return init_names, init_arrays
 
 
-def load_module(prefix, epoch, data_names, data_shapes, network=None, context='cpu'):
+def load_module(
+    prefix,
+    epoch,
+    data_names,
+    data_shapes,
+    *,
+    network=None,
+    net_prefix=None,
+    context='cpu'
+):
     """
     Loads the model from checkpoint specified by prefix and epoch, binds it
     to an executor, and sets its parameters and returns a mx.mod.Module
@@ -92,9 +101,13 @@ def load_module(prefix, epoch, data_names, data_shapes, network=None, context='c
     if network is not None:
         sym = network
 
+    net_prefix = net_prefix or ''
+    if net_prefix:
+        arg_params = {rename_params(k, net_prefix): v for k, v in arg_params.items()}
+        aux_params = {rename_params(k, net_prefix): v for k, v in aux_params.items()}
     # We don't need CTC loss for prediction, just a simple softmax will suffice.
     # We get the output of the layer just before the loss layer ('pred_fc') and add softmax on top
-    pred_fc = sym.get_internals()['pred_fc_output']
+    pred_fc = sym.get_internals()[net_prefix + 'pred_fc_output']
     sym = mx.sym.softmax(data=pred_fc)
 
     if not check_context(context):
@@ -110,6 +123,12 @@ def load_module(prefix, epoch, data_names, data_shapes, network=None, context='c
     return mod
 
 
+def rename_params(k, net_prefix):
+    pat = re.compile(r'^(densenet|crnn|gru|lstm)\d*_')
+    k = pat.sub('', k, 1)
+    return net_prefix + k
+
+
 class CnOcr(object):
     MODEL_FILE_PREFIX = 'cnocr-v{}'.format(MODEL_VERSION)
 
@@ -120,6 +139,7 @@ class CnOcr(object):
         cand_alphabet=None,
         root=data_dir(),
         context='cpu',
+        name=None,
     ):
         """
 
@@ -130,6 +150,7 @@ class CnOcr(object):
             Linux/Mac下默认值为 `~/.cnocr`，表示模型文件所处文件夹类似 `~/.cnocr/1.1.0/conv-lite-fc-0027`。
             Windows下默认值为 ``。
         :param context: 'cpu', or 'gpu'。表明预测时是使用CPU还是GPU。默认为CPU。
+        :param name: 正在初始化的这个实例名称。如果需要同时初始化多个实例，需要为不同的实例指定不同的名称。
         """
         check_model_name(model_name)
         self._model_name = model_name
@@ -139,17 +160,17 @@ class CnOcr(object):
         root = os.path.join(root, MODEL_VERSION)
         self._model_dir = os.path.join(root, self._model_name)
         self._assert_and_prepare_model_files()
-        self._alphabet, inv_alph_dict = read_charset(
+        self._alphabet, self._inv_alph_dict = read_charset(
             os.path.join(self._model_dir, 'label_cn.txt')
         )
 
         self._cand_alph_idx = None
-        if cand_alphabet is not None:
-            self._cand_alph_idx = [0] + [inv_alph_dict[word] for word in cand_alphabet]
-            self._cand_alph_idx.sort()
+        self.set_cand_alphabet(cand_alphabet)
 
         self._hp = Hyperparams()
         self._hp._loss_type = None  # infer mode
+        # 传入''的话，也改成传入None
+        self._net_prefix = None if name == '' else name
 
         self._mod = self._get_module(context)
 
@@ -174,7 +195,7 @@ class CnOcr(object):
         get_model_file(model_dir)
 
     def _get_module(self, context):
-        network, self._hp = gen_network(self._model_name, self._hp)
+        network, self._hp = gen_network(self._model_name, self._hp, self._net_prefix)
         hp = self._hp
         prefix = os.path.join(self._model_dir, self._model_file_prefix)
         data_names = ['data']
@@ -186,9 +207,22 @@ class CnOcr(object):
             data_names,
             data_shapes,
             network=network,
+            net_prefix=self._net_prefix,
             context=context,
         )
         return mod
+
+    def set_cand_alphabet(self, cand_alphabet):
+        """
+        设置待识别字符的候选集合。
+        :param cand_alphabet: 待识别字符所在的候选集合。默认为 `None`，表示不限定识别字符范围
+        :return: None
+        """
+        if cand_alphabet is None:
+            self._cand_alph_idx = None
+        else:
+            self._cand_alph_idx = [0] + [self._inv_alph_dict[word] for word in cand_alphabet]
+            self._cand_alph_idx.sort()
 
     def ocr(self, img_fp):
         """
