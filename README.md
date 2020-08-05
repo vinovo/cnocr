@@ -298,6 +298,7 @@ Predicted Chars: ['笠', '淡', '嘿', '骅', '谧', '鼎', '皋', '姚', '歼',
 ```python
 import mxnet as mx
 from cnocr import CnOcr
+from cnocr.line_split import line_split
 ocr = CnOcr()
 img_fp = 'examples/multi-line_cn1.png'
 img = mx.image.imread(img_fp, 1).asnumpy()
