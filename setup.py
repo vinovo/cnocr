@@ -3,6 +3,7 @@ import os
 from setuptools import find_packages, setup
 from pathlib import Path
 
+# https://packaging.python.org/tutorials/packaging-projects/
 PACKAGE_NAME = "memegle_cnocr"
 
 here = Path(__file__).parent
