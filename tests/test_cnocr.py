@@ -11,10 +11,10 @@ import Levenshtein
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 
-from cnocr import CnOcr
-from cnocr.consts import NUMBERS, AVAILABLE_MODELS
-from cnocr.line_split import line_split
-from cnocr.data_utils.aug import GrayAug
+from memegle_cnocr import CnOcr
+from memegle_cnocr.consts import NUMBERS, AVAILABLE_MODELS
+from memegle_cnocr.line_split import line_split
+from memegle_cnocr.data_utils.aug import GrayAug
 
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 example_dir = os.path.join(root_dir, 'examples')

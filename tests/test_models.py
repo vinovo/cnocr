@@ -9,11 +9,11 @@ from mxnet import nd
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 
-from cnocr.consts import EMB_MODEL_TYPES, SEQ_MODEL_TYPES
-from cnocr.utils import set_logger
-from cnocr.hyperparams.cn_hyperparams import CnHyperparams
-from cnocr.symbols.densenet import _make_dense_layer, DenseNet, cal_num_params
-from cnocr.symbols.crnn import (
+from memegle_cnocr.consts import EMB_MODEL_TYPES, SEQ_MODEL_TYPES
+from memegle_cnocr.utils import set_logger
+from memegle_cnocr.hyperparams.cn_hyperparams import CnHyperparams
+from memegle_cnocr.symbols.densenet import _make_dense_layer, DenseNet, cal_num_params
+from memegle_cnocr.symbols.crnn import (
     CRnn,
     pipline,
     gen_network,

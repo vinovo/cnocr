@@ -25,14 +25,14 @@ import mxnet as mx
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cnocr.consts import EMB_MODEL_TYPES, SEQ_MODEL_TYPES, MODEL_VERSION
-from cnocr.utils import data_dir, set_logger
-from cnocr.hyperparams.cn_hyperparams import CnHyperparams
-from cnocr.data_utils.data_iter import GrayImageIter
-from cnocr.data_utils.aug import FgBgFlipAug
-from cnocr.symbols.crnn import gen_network
-from cnocr.fit.ctc_metrics import CtcMetrics
-from cnocr.fit.fit import fit
+from memegle_cnocr.consts import EMB_MODEL_TYPES, SEQ_MODEL_TYPES, MODEL_VERSION
+from memegle_cnocr.utils import data_dir, set_logger
+from memegle_cnocr.hyperparams.cn_hyperparams import CnHyperparams
+from memegle_cnocr.data_utils.data_iter import GrayImageIter
+from memegle_cnocr.data_utils.aug import FgBgFlipAug
+from memegle_cnocr.symbols.crnn import gen_network
+from memegle_cnocr.fit.ctc_metrics import CtcMetrics
+from memegle_cnocr.fit.fit import fit
 
 
 logger = set_logger(log_level=logging.INFO)

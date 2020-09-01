@@ -7,7 +7,7 @@ from mxnet.gluon.utils import download
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 
-from cnocr.utils import check_context
+from memegle_cnocr.utils import check_context
 
 
 @pytest.mark.skip()

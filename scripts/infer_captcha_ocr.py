@@ -24,12 +24,12 @@ import numpy as np
 # from PIL import Image
 import argparse
 
-from cnocr.fit.ctc_metrics import CtcMetrics
-from cnocr.hyperparams.cn_hyperparams import CnHyperparams as Hyperparams
-from cnocr.hyperparams.hyperparams2 import Hyperparams as Hyperparams2
-from cnocr.fit.lstm import init_states
-from cnocr.data_utils.data_iter import SimpleBatch
-from cnocr.symbols.crnn import crnn_lstm
+from memegle_cnocr.fit.ctc_metrics import CtcMetrics
+from memegle_cnocr.hyperparams.cn_hyperparams import CnHyperparams as Hyperparams
+from memegle_cnocr.hyperparams.hyperparams2 import Hyperparams as Hyperparams2
+from memegle_cnocr.fit.lstm import init_states
+from memegle_cnocr.data_utils.data_iter import SimpleBatch
+from memegle_cnocr.symbols.crnn import crnn_lstm
 
 
 def read_captcha_img(path, hp):

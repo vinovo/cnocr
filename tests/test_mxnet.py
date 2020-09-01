@@ -10,8 +10,8 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 
-from cnocr.data_utils.aug import FgBgFlipAug
-from cnocr.data_utils.data_iter import GrayImageIter
+from memegle_cnocr.data_utils.aug import FgBgFlipAug
+from memegle_cnocr.data_utils.data_iter import GrayImageIter
 
 LST_DIR = Path('data/sample-data-lst')
 DATA_DIR = Path('data/sample-data')

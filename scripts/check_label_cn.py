@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cnocr.utils import data_dir, read_charset
+from memegle_cnocr.utils import data_dir, read_charset
 
 BAD_CHARS = [5751, 5539, 5536, 5535, 5464, 4105]
 

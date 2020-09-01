@@ -6,7 +6,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 
-from cnocr.fit.ctc_metrics import CtcMetrics
+from memegle_cnocr.fit.ctc_metrics import CtcMetrics
 
 
 @pytest.mark.parametrize('input, expected', [

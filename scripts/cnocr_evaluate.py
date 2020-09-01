@@ -32,8 +32,8 @@ import Levenshtein
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from cnocr import CnOcr
-from cnocr.utils import set_logger, gen_context
+from memegle_cnocr import CnOcr
+from memegle_cnocr.utils import set_logger, gen_context
 
 
 logger = set_logger(log_level=logging.INFO)

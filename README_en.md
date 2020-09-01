@@ -81,7 +81,7 @@ The function `cnOcr.ocr (img_fp)` can recognize texts in an image containing mul
 
 
 ```python
-from cnocr import CnOcr
+from memegle_cnocr import CnOcr
 ocr = CnOcr()
 res = ocr.ocr('examples/multi-line_cn1.png')
 print("Predicted Chars:", res)
@@ -91,7 +91,7 @@ or:
 
 ```python
 import mxnet as mx
-from cnocr import CnOcr
+from memegle_cnocr import CnOcr
 ocr = CnOcr()
 img_fp = 'examples/multi-line_cn1.png'
 img = mx.image.imread(img_fp, 1)
@@ -131,7 +131,7 @@ If you know that the image you're predicting contains only one line of text, fun
 **Use Case**：
 
 ```python
-from cnocr import CnOcr
+from memegle_cnocr import CnOcr
 ocr = CnOcr()
 res = ocr.ocr_for_single_line('examples/rand_cn1.png')
 print("Predicted Chars:", res)
@@ -141,7 +141,7 @@ or:
 
 ```python
 import mxnet as mx
-from cnocr import CnOcr
+from memegle_cnocr import CnOcr
 ocr = CnOcr()
 img_fp = 'examples/rand_cn1.png'
 img = mx.image.imread(img_fp, 1)
@@ -177,8 +177,8 @@ Function `CnOcr.ocr_for_single_lines(img_list)` can predict a number of single-l
 
 ```python
 import mxnet as mx
-from cnocr import CnOcr
-from cnocr.line_split import line_split
+from memegle_cnocr import CnOcr
+from memegle_cnocr.line_split import line_split
 ocr = CnOcr()
 img_fp = 'examples/multi-line_cn1.png'
 img = mx.image.imread(img_fp, 1).asnumpy()

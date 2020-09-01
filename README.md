@@ -196,7 +196,7 @@ class CnOcr(object):
 
 
 ```python
-from cnocr import CnOcr
+from memegle_cnocr import CnOcr
 ocr = CnOcr()
 res = ocr.ocr('examples/multi-line_cn1.png')
 print("Predicted Chars:", res)
@@ -205,7 +205,7 @@ print("Predicted Chars:", res)
 或：
 ```python
 import mxnet as mx
-from cnocr import CnOcr
+from memegle_cnocr import CnOcr
 ocr = CnOcr()
 img_fp = 'examples/multi-line_cn1.png'
 img = mx.image.imread(img_fp, 1)
@@ -249,7 +249,7 @@ Predicted Chars: [['网', '络', '支', '付', '并', '无', '本', '质', '的'
 **调用示例**：
 
 ```python
-from cnocr import CnOcr
+from memegle_cnocr import CnOcr
 ocr = CnOcr()
 res = ocr.ocr_for_single_line('examples/rand_cn1.png')
 print("Predicted Chars:", res)
@@ -259,7 +259,7 @@ print("Predicted Chars:", res)
 
 ```python
 import mxnet as mx
-from cnocr import CnOcr
+from memegle_cnocr import CnOcr
 ocr = CnOcr()
 img_fp = 'examples/rand_cn1.png'
 img = mx.image.imread(img_fp, 1)
@@ -297,8 +297,8 @@ Predicted Chars: ['笠', '淡', '嘿', '骅', '谧', '鼎', '皋', '姚', '歼',
 
 ```python
 import mxnet as mx
-from cnocr import CnOcr
-from cnocr.line_split import line_split
+from memegle_cnocr import CnOcr
+from memegle_cnocr.line_split import line_split
 ocr = CnOcr()
 img_fp = 'examples/multi-line_cn1.png'
 img = mx.image.imread(img_fp, 1).asnumpy()
@@ -332,7 +332,7 @@ python scripts/cnocr_predict.py --file examples/multi-line_cn1.png
 
 ```python
 from cnstd import CnStd
-from cnocr import CnOcr
+from memegle_cnocr import CnOcr
 
 std = CnStd()
 cn_ocr = CnOcr()

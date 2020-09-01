@@ -3,7 +3,7 @@ import os
 from setuptools import find_packages, setup
 from pathlib import Path
 
-PACKAGE_NAME = "cnocr"
+PACKAGE_NAME = "memegle_cnocr"
 
 here = Path(__file__).parent
 
@@ -30,13 +30,13 @@ extras_require = {
 setup(
     name=PACKAGE_NAME,
     version=about['__version__'],
-    description="Simple package for Chinese OCR, with small pretrained models",
+    description="Chinese OCR adapted for use by Memegle",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author='breezedeus',
-    author_email='breezedeus@163.com',
+    author='Paul Zhu',
+    author_email='zhz433@ucsd.edu',
     license='Apache 2.0',
-    url='https://github.com/breezedeus/cnocr',
+    url='https://github.com/vinovo/cnocr',
     platforms=["Mac", "Linux", "Windows"],
     packages=find_packages(),
     include_package_data=True,

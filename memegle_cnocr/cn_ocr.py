@@ -22,12 +22,12 @@ import mxnet as mx
 import numpy as np
 from PIL import Image
 
-from cnocr.consts import MODEL_VERSION, AVAILABLE_MODELS
-from cnocr.hyperparams.cn_hyperparams import CnHyperparams as Hyperparams
-from cnocr.fit.lstm import init_states
-from cnocr.fit.ctc_metrics import CtcMetrics
-from cnocr.symbols.crnn import gen_network
-from cnocr.utils import (
+from memegle_cnocr.consts import MODEL_VERSION, AVAILABLE_MODELS
+from memegle_cnocr.hyperparams.cn_hyperparams import CnHyperparams as Hyperparams
+from memegle_cnocr.fit.lstm import init_states
+from memegle_cnocr.fit.ctc_metrics import CtcMetrics
+from memegle_cnocr.symbols.crnn import gen_network
+from memegle_cnocr.utils import (
     data_dir,
     get_model_file,
     read_charset,
@@ -35,7 +35,7 @@ from cnocr.utils import (
     check_model_name,
     check_context,
 )
-from cnocr.line_split import line_split
+from memegle_cnocr.line_split import line_split
 
 
 logger = logging.getLogger(__name__)
