@@ -134,7 +134,7 @@ class CnOcr(object):
 
     def __init__(
         self,
-        model_name='densenet-lite-fc',
+        model_name='densenet-lite-gru',
         model_epoch=None,
         cand_alphabet=None,
         root=data_dir(),
