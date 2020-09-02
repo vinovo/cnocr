@@ -347,6 +347,18 @@ class CnOcr(object):
         mx.nd.waitall()
         return prob.asnumpy()
 
+    # https://github.com/breezedeus/cnocr/issues/110
+    def _del_repeat(self, a):
+        opt = [1] * len(a)
+        for i in range(len(a)):
+            if a[i] == 0:
+                opt[i] = 0
+                continue
+            if i >= 1:
+                if a[i] == a[i - 1]:
+                    opt[i] = 0
+        return np.nonzero(np.array(opt))
+
     def _gen_line_pred_chars(self, line_prob, img_width, max_img_width):
         """
         Get the predicted characters.
@@ -356,6 +368,9 @@ class CnOcr(object):
         :return:
         """
         class_ids = np.argmax(line_prob, axis=-1)
+        indexs =self._del_repeat(class_ids)
+        probs = np.max(line_prob, axis=-1)
+        fin_probs = probs[indexs]
 
         if img_width < max_img_width:
             comp_ratio = self._hp.seq_len_cmpr_ratio
@@ -366,4 +381,4 @@ class CnOcr(object):
         alphabet = self._alphabet
         res = [alphabet[p] if alphabet[p] != '<space>' else ' ' for p in prediction]
 
-        return res
+        return res, fin_probs

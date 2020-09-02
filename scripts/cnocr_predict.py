@@ -61,7 +61,7 @@ def main():
     for fp in fp_list:
         res = ocr_func(fp)
         logger.info('\n' + '='*10 + fp + '='*10)
-        res = [''.join(line_p) for line_p in res]
+        res = [''.join(str(line_p)) for line_p in res]
         logger.info('\n' + '\n'.join(res))
 
 
